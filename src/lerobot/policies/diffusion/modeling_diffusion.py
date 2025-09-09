@@ -496,7 +496,6 @@ class DiffusionRgbEncoder(nn.Module):
         self.pool = SpatialSoftmax(feature_map_shape, num_kp=config.spatial_softmax_num_keypoints)
         self.feature_dim = config.spatial_softmax_num_keypoints * 2
         self.out = nn.Linear(config.spatial_softmax_num_keypoints * 2, self.feature_dim)
-        self.relu = nn.ReLU()
 
     def forward(self, x: Tensor) -> Tensor:
         """
@@ -514,8 +513,8 @@ class DiffusionRgbEncoder(nn.Module):
                 x = self.center_crop(x)
         # Extract backbone feature.
         x = torch.flatten(self.pool(self.backbone(x)), start_dim=1)
-        # Final linear layer with non-linearity.
-        x = self.relu(self.out(x))
+        # Final linear layer.
+        x = self.out(x)
         return x
 
 
