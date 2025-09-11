@@ -494,8 +494,8 @@ class DiffusionRgbEncoder(nn.Module):
         feature_map_shape = get_output_shape(self.backbone, dummy_shape)[1:]
 
         self.pool = SpatialSoftmax(feature_map_shape, num_kp=config.spatial_softmax_num_keypoints)
-        self.feature_dim = config.spatial_softmax_num_keypoints * 2
-        self.out = nn.Linear(config.spatial_softmax_num_keypoints * 2, self.feature_dim)
+        # self.feature_dim = config.spatial_softmax_num_keypoints * 2
+        # self.out = nn.Linear(config.spatial_softmax_num_keypoints * 2, self.feature_dim)
 
     def forward(self, x: Tensor) -> Tensor:
         """
