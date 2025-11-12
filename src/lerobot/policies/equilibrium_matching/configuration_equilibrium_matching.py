@@ -20,6 +20,7 @@ from lerobot.configs.policies import PreTrainedConfig
 from lerobot.configs.types import NormalizationMode
 from lerobot.optim.optimizers import AdamWConfig, SOAPConfig
 from lerobot.optim.schedulers import DiffuserSchedulerConfig
+from lerobot.configs.types import PolicyFeature
 
 
 @PreTrainedConfig.register_subclass("equilibrium_matching")
@@ -158,6 +159,13 @@ class EquilibriumMatchingConfig(PreTrainedConfig):
             name=self.scheduler_name,
             num_warmup_steps=self.scheduler_warmup_steps,
         )
+
+    @property
+    def tactile_feature(self) -> PolicyFeature | None:
+        for key, ft in self.input_features.items():
+            if "tactile" in key:
+                return ft
+        return None
 
     def validate_features(self) -> None:
         if len(self.image_features) == 0 and self.env_state_feature is None:

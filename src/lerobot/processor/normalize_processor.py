@@ -251,10 +251,11 @@ class _NormalizationMixin:
             A new observation dictionary with the transformed tensor values.
         """
         new_observation = dict(observation)
+        
         for key, feature in self.features.items():
             if self.normalize_observation_keys is not None and key not in self.normalize_observation_keys:
                 continue
-            if feature.type != FeatureType.ACTION and key in new_observation:
+            if "tactile" not in key and feature.type != FeatureType.ACTION and key in new_observation:
                 # Convert to tensor but preserve original dtype for adaptation logic
                 tensor = torch.as_tensor(new_observation[key])
                 new_observation[key] = self._apply_transform(tensor, key, feature.type, inverse=inverse)
@@ -447,6 +448,7 @@ class NormalizerProcessorStep(_NormalizationMixin, ProcessorStep):
 
         # Handle observation normalization.
         observation = new_transition.get(TransitionKey.OBSERVATION)
+
         if observation is not None:
             new_transition[TransitionKey.OBSERVATION] = self._normalize_observation(
                 observation, inverse=False

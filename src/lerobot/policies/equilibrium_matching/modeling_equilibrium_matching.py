@@ -153,15 +153,24 @@ class EquilibriumMatchingModel(nn.Module):
                 encoders = [RgbEncoder(config) for _ in range(num_images)]
                 self.rgb_encoder = nn.ModuleList(encoders)
                 global_cond_dim += encoders[0].feature_dim * num_images
+                self.img_feature_dim = encoders[0].feature_dim
             else:
                 self.rgb_encoder = RgbEncoder(config)
                 global_cond_dim += self.rgb_encoder.feature_dim * num_images
+                self.img_feature_dim = self.rgb_encoder.feature_dim
+            
         if self.config.env_state_feature:
             global_cond_dim += self.config.env_state_feature.shape[0]
         if self.config.language_conditioned:
             self.lang_encoder = LanguageEncoder(config)
             self.lang_encoder.requires_grad_(False)
             global_cond_dim += self.lang_encoder.feature_dim
+
+        if self.config.tactile_feature:
+            self.tactile_encoder = RgbEncoder(config)
+            self.tactile_film = nn.Linear(self.img_feature_dim, self.img_feature_dim * 2)
+
+        print(self.config.tactile_feature)
 
         self.unet = ConditionalUnet1d(config, global_cond_dim=global_cond_dim * config.n_obs_steps)
 
@@ -299,6 +308,19 @@ class EquilibriumMatchingModel(nn.Module):
                 img_features = einops.rearrange(
                     img_features, "(b s n) ... -> b s (n ...)", b=batch_size, s=n_obs_steps
                 )
+
+            if self.config.tactile_feature:
+                tactile = batch["observation.states.tactile_depth"]  # [B, S, H, W, 1]
+                tactile = tactile.permute(0, 1, 4, 2, 3)              # [B, S, 1, H, W]
+                tactile = tactile.reshape(-1, 1, tactile.shape[-2], tactile.shape[-1])  # [B*S, 1, H, W]
+                tactile = tactile.repeat(1, 3, 1, 1)                  # [B*S, 3, H, W]
+                tactile = self.tactile_encoder(tactile)
+                tactile_features = self.tactile_film(tactile)
+                tactile_features = tactile_features.view(batch_size, n_obs_steps, -1)
+                img_features[..., -self.img_feature_dim:] = (
+                    1 + tactile_features[..., :self.img_feature_dim]
+                    ) + tactile_features[..., self.img_feature_dim:]
+
             global_cond_feats.append(img_features)
 
         if self.config.env_state_feature:
