@@ -167,10 +167,14 @@ class EquilibriumMatchingModel(nn.Module):
             global_cond_dim += self.lang_encoder.feature_dim
 
         if self.config.tactile_feature:
-            self.tactile_encoder = RgbEncoder(config)
-            self.tactile_film = nn.Linear(self.img_feature_dim, self.img_feature_dim * 2)
+            in_dim = self.config.tactile_feature.shape[0] * self.config.tactile_feature.shape[1]
+            out_dim = self.img_feature_dim * 2
 
-        print(self.config.tactile_feature)
+            self.tactile_encoder = nn.Sequential(
+                nn.Linear(in_dim, out_dim),
+                nn.GELU(approximate='none'),
+                nn.Linear(out_dim, out_dim),
+            )
 
         self.unet = ConditionalUnet1d(config, global_cond_dim=global_cond_dim * config.n_obs_steps)
 
@@ -309,14 +313,22 @@ class EquilibriumMatchingModel(nn.Module):
                     img_features, "(b s n) ... -> b s (n ...)", b=batch_size, s=n_obs_steps
                 )
 
+            # if self.config.tactile_feature:
+            #     tactile = batch["observation.states.tactile_depth"]  # [B, S, H, W, 1]
+            #     tactile = tactile.permute(0, 1, 4, 2, 3)              # [B, S, 1, H, W]
+            #     tactile = tactile.reshape(-1, 1, tactile.shape[-2], tactile.shape[-1])  # [B*S, 1, H, W]
+            #     tactile = tactile.repeat(1, 3, 1, 1)                  # [B*S, 3, H, W]
+            #     tactile = self.tactile_encoder(tactile)
+            #     tactile_features = self.tactile_film(tactile)
+            #     tactile_features = tactile_features.view(batch_size, n_obs_steps, -1)
+            #     img_features[..., -self.img_feature_dim:] = (
+            #         1 + tactile_features[..., :self.img_feature_dim]
+            #         ) + tactile_features[..., self.img_feature_dim:]
+
+
             if self.config.tactile_feature:
-                tactile = batch["observation.states.tactile_depth"]  # [B, S, H, W, 1]
-                tactile = tactile.permute(0, 1, 4, 2, 3)              # [B, S, 1, H, W]
-                tactile = tactile.reshape(-1, 1, tactile.shape[-2], tactile.shape[-1])  # [B*S, 1, H, W]
-                tactile = tactile.repeat(1, 3, 1, 1)                  # [B*S, 3, H, W]
-                tactile = self.tactile_encoder(tactile)
-                tactile_features = self.tactile_film(tactile)
-                tactile_features = tactile_features.view(batch_size, n_obs_steps, -1)
+                tactile_features = batch["observation.states.tactile_depth"].flatten(start_dim = -3)  # [B, S, H, W, 1]
+                tactile_features = self.tactile_encoder(tactile_features)
                 img_features[..., -self.img_feature_dim:] = (
                     1 + tactile_features[..., :self.img_feature_dim]
                     ) + tactile_features[..., self.img_feature_dim:]
