@@ -28,6 +28,7 @@ OBS_LANGUAGE_TOKENS = OBS_LANGUAGE + ".tokens"
 OBS_LANGUAGE_ATTENTION_MASK = OBS_LANGUAGE + ".attention_mask"
 
 ACTION = "action"
+LANG_INSTRUCTION = "task"
 REWARD = "next.reward"
 TRUNCATED = "next.truncated"
 DONE = "next.done"

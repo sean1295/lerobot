@@ -88,6 +88,8 @@ class EquilibriumMatchingPolicy(PreTrainedPolicy):
             self._queues[OBS_ENV_STATE] = deque(maxlen=self.config.n_obs_steps)
         if self.config.language_conditioned:
             self._queues[LANG_INSTRUCTION] = deque(maxlen=1)
+        if self.config.tactile_feature:
+            self._queues["observation.states.tactile_depth"] = deque(maxlen=self.config.n_obs_steps)
 
     @torch.no_grad()
     def predict_action_chunk(self, batch: dict[str, Tensor]) -> Tensor:

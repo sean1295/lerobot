@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 
 from lerobot.configs.policies import PreTrainedConfig
 from lerobot.configs.types import NormalizationMode
-from lerobot.optim.optimizers import AdamWConfig, SOAPConfig
+from lerobot.optim.optimizers import AdamWConfig
 from lerobot.optim.schedulers import DiffuserSchedulerConfig
 from lerobot.configs.types import PolicyFeature
 
@@ -144,14 +144,6 @@ class EquilibriumMatchingConfig(PreTrainedConfig):
             betas=self.optimizer_betas,
             eps=self.optimizer_eps,
             weight_decay=self.optimizer_weight_decay,
-        )
-
-    def get_optimizer_preset(self) -> SOAPConfig:
-        return SOAPConfig(
-            lr=1e-3,
-            betas=(0.95, 0.95),
-            eps=1e-8,
-            weight_decay=0.01,
         )
 
     def get_scheduler_preset(self) -> DiffuserSchedulerConfig:

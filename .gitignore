@@ -177,3 +177,7 @@ outputs/
 *.urdf
 *.xml
 *.part
+
+# Miscellaneous 
+outputs/
+isaac_eval_logs/
